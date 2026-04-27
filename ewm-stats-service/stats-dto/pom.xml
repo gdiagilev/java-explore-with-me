@@ -12,7 +12,7 @@
     </parent>
 
     <artifactId>stats-dto</artifactId>
-    <n>stats-dto</n>
+    <name>stats-dto</name>
 
     <dependencies>
         <dependency>
