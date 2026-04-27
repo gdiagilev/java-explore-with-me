@@ -1,1 +1,1 @@
-FROM scratch
+FROM eclipse-temurin:21-jre-alpine
