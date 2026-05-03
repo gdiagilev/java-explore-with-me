@@ -2,6 +2,7 @@ package ru.practicum.ewm.event;
 
 import lombok.RequiredArgsConstructor;
 import org.springframework.data.domain.PageRequest;
+import org.springframework.data.domain.Sort;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import ru.practicum.ewm.category.Category;
@@ -38,6 +39,8 @@ public class EventService {
     private final CategoryRepository categoryRepository;
     private final RequestRepository requestRepository;
     private final StatsHelper statsHelper;
+
+    // ─── Private API ──────────────────────────────────────────────────────────
 
     public List<EventShortDto> getUserEvents(Long userId, int from, int size) {
         checkUserExists(userId);
@@ -166,6 +169,7 @@ public class EventService {
                 .build();
     }
 
+    // ─── Admin API ────────────────────────────────────────────────────────────
 
     public List<EventFullDto> getEventsByAdmin(List<Long> users, List<String> states,
                                                List<Long> categories,
@@ -176,8 +180,16 @@ public class EventService {
                 .map(EventState::valueOf)
                 .toList();
 
-        List<Event> events = eventRepository.findAllByAdminFilters(
-                users, eventStates, categories, rangeStart, rangeEnd, page);
+        EventFilterParams params = EventFilterParams.builder()
+                .users(users)
+                .states(eventStates)
+                .categories(categories)
+                .rangeStart(rangeStart)
+                .rangeEnd(rangeEnd)
+                .build();
+
+        List<Event> events = eventRepository.findAll(EventSpecification.adminFilter(params), page)
+                .getContent();
 
         return toFullDtos(events);
     }
@@ -211,6 +223,7 @@ public class EventService {
         return EventMapper.toEventFullDto(event, confirmed, views.getOrDefault(eventId, 0L));
     }
 
+    // ─── Public API ───────────────────────────────────────────────────────────
 
     public List<EventShortDto> getPublishedEvents(String text, List<Long> categories,
                                                   Boolean paid, LocalDateTime rangeStart,
@@ -221,12 +234,24 @@ public class EventService {
             throw new ValidationException("Start date must not be after end date.");
         }
 
-        LocalDateTime start = rangeStart != null ? rangeStart : LocalDateTime.now();
+        EventFilterParams params = EventFilterParams.builder()
+                .text(text)
+                .categories(categories)
+                .paid(paid)
+                .rangeStart(rangeStart)
+                .rangeEnd(rangeEnd)
+                .onlyAvailable(onlyAvailable)
+                .build();
 
-        int offset = from;
+        Sort sorting = "VIEWS".equals(sort)
+                ? Sort.unsorted()
+                : Sort.by(Sort.Direction.ASC, "eventDate");
 
-        List<Event> events = eventRepository.findAllByPublicFilters(
-                text, categories, paid, start, rangeEnd, onlyAvailable, size, offset);
+        PageRequest page = PageRequest.of(from / size, size, sorting);
+
+        List<Event> events = eventRepository
+                .findAll(EventSpecification.publicFilter(params), page)
+                .getContent();
 
         statsHelper.saveHit(uri, ip);
 
@@ -252,6 +277,7 @@ public class EventService {
         return EventMapper.toEventFullDto(event, confirmed, views.getOrDefault(eventId, 0L));
     }
 
+    // ─── Helpers ──────────────────────────────────────────────────────────────
 
     private List<EventShortDto> toShortDtos(List<Event> events) {
         if (events.isEmpty()) return List.of();

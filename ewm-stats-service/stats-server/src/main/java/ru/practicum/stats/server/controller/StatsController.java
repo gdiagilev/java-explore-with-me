@@ -28,11 +28,19 @@ public class StatsController {
 
     @GetMapping("/stats")
     public List<ViewStatsDto> getStats(
-            @RequestParam @DateTimeFormat(pattern = "yyyy-MM-dd HH:mm:ss") LocalDateTime start,
-            @RequestParam @DateTimeFormat(pattern = "yyyy-MM-dd HH:mm:ss") LocalDateTime end,
+            @RequestParam(required = false) @DateTimeFormat(pattern = "yyyy-MM-dd HH:mm:ss") LocalDateTime start,
+            @RequestParam(required = false) @DateTimeFormat(pattern = "yyyy-MM-dd HH:mm:ss") LocalDateTime end,
             @RequestParam(required = false) List<String> uris,
             @RequestParam(defaultValue = "false") boolean unique) {
         log.info("GET /stats - start: {}, end: {}, uris: {}, unique: {}", start, end, uris, unique);
+
+        if (start == null) {
+            throw new IllegalArgumentException("Parameter 'start' is required.");
+        }
+        if (end == null) {
+            throw new IllegalArgumentException("Parameter 'end' is required.");
+        }
+
         return service.getStats(start, end, uris, unique);
     }
 }
