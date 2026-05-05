@@ -88,4 +88,16 @@ public class EventSpecification {
             return cb.and(predicates.toArray(new Predicate[0]));
         };
     }
+
+    public static Specification<Event> locationFilter(EventFilterParams params) {
+        return (root, query, cb) -> {
+            List<Predicate> predicates = new ArrayList<>();
+
+            predicates.add(cb.equal(root.get("state"), EventState.PUBLISHED));
+
+            // Filter by distance using Haversine formula via native subquery
+            // We'll handle this with a native query in EventRepository instead
+            return cb.and(predicates.toArray(new Predicate[0]));
+        };
+    }
 }

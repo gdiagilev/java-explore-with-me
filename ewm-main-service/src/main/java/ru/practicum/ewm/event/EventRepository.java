@@ -26,4 +26,16 @@ public interface EventRepository extends JpaRepository<Event, Long>,
             GROUP BY e.id
             """)
     List<Object[]> countConfirmedRequestsByEventIds(List<Long> eventIds);
+
+    @Query(value = """
+        SELECT * FROM events e
+        WHERE e.state = 'PUBLISHED'
+        AND (6371 * acos(
+            cos(radians(:lat)) * cos(radians(e.lat)) *
+            cos(radians(e.lon) - radians(:lon)) +
+            sin(radians(:lat)) * sin(radians(e.lat))
+        )) * 1000 <= :radius
+        LIMIT :size OFFSET :offset
+        """, nativeQuery = true)
+    List<Event> findAllByLocation(float lat, float lon, float radius, int size, int offset);
 }
