@@ -18,4 +18,7 @@ public class EventFilterParams {
     private Boolean onlyAvailable;
     private List<Long> users;
     private List<EventState> states;
+    private Float lat;
+    private Float lon;
+    private Float radius;
 }
